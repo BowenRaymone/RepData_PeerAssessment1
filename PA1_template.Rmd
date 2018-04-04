@@ -7,19 +7,80 @@ output:
 
 
 ## Loading and preprocessing the data
-
+* First load the data
+```{r echo=TRUE}
+act_data=read.csv("activity.csv")
+```
 
 
 ## What is mean total number of steps taken per day?
-
-
+* Calculate mean total number of steps
+```{r echo=TRUE}
+total_steps=aggregate(steps~date, data = act_data,FUN = sum, na.rm=TRUE)
+```
+* Make a histogram for total number of steps per day
+```{r echo=TRUE}
+hist(total_steps$steps)
+```
+*Calculate the mean and median of total number of steps per day
+```{r echo=TRUE}
+mean(total_steps$steps)
+median(total_steps$steps)
+```
 
 ## What is the average daily activity pattern?
+* Plot the 5-minute interval and the average number of steps 
+```{r echo=TRUE}
+average_daily = aggregate(steps~interval, data = act_data,FUN = mean, na.rm=TRUE)
+plot(steps~interval, data = average_daily,type="l")
+```
 
-
+* Which 5-minute interval contains the maximum number of steps
+```{r echo=TRUE}
+average_daily[which.max(average_daily$steps),]$interval
+```
 
 ## Imputing missing values
-
-
+* Find the total number of rows contains NA
+```{r echo=TRUE}
+sum(is.na(act_data$steps))
+```
+* Fill in all of the missing values using the mean of that 5-minute interval
+```{r echo=TRUE}
+index_na = which(is.na(act_data$steps))
+act_data_new = act_data
+for (i in index_na){
+  interval_i = act_data[i,]$interval
+  interval_index = which(average_daily$interval==interval_i)
+  act_data_new[i,]$steps = average_daily[interval_index,]$steps
+}
+```
+* Histogram of total number of steps each day and Calculate the mean and median total number of steps taken per day. 
+```{r echo=TRUE}
+total_steps_new=aggregate(steps~date, data = act_data_new,FUN = sum)
+hist(total_steps_new$steps)
+mean(total_steps_new$steps)
+median(total_steps_new$steps)
+```
+* The mean value is the same as the previous estimate, and the median values is different from the previous estimate. Now the median value is the same as the mean value
 
 ## Are there differences in activity patterns between weekdays and weekends?
+* Create a new variable indicating whether the date is weekday or not
+```{r echo=TRUE}
+library(chron)
+act_data_new$day = is.weekend(as.Date(act_data_new$date))
+act_data_new[which(act_data_new$day==FALSE),]$day="weekday"
+act_data_new[which(act_data_new$day==TRUE),]$day="weekend"
+
+act_data_new$day = factor(act_data_new$day, levels = c("weekday", "weekend"))
+
+```
+
+* Make a plot of the 5-minute interval and the average number of steps taken averaged across all weekday days or weekend days
+```{r echo=TRUE}
+averge_5_interval <- aggregate(steps ~ interval + day, data = act_data_new, FUN = mean)
+
+library(lattice)
+xyplot(steps ~ interval | day, data = averge_5_interval, type = "l", layout=c(1,2))
+
+```
